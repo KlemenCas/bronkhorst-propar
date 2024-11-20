@@ -181,12 +181,15 @@ class instrument(object):
       parm = self.db.get_parameter(dde_nr)
     except:
       raise ValueError('DDE parameter number error!')
-    resp = self.read_parameters([parm], channel=channel)	
-    if resp != None:
-      for r in resp:
-        return r['data']
-    else:
-      return None
+    resp = self.read_parameters([parm], channel=channel)
+    return resp
+	  
+    # KC; removing below section - it hides the return status
+    # if resp != None:
+    #   for r in resp:
+    #     return r['data']
+    # else:
+    #   return None
 
   def writeParameter(self, dde_nr, data, channel=None):
     """Write a single parameter indicated by DDE nr.
@@ -204,8 +207,11 @@ class instrument(object):
     except:
       raise ValueError('DDE parameter number error!')
     parm['data'] = data
-    resp = self.write_parameters([parm], channel=channel)
-    return (resp == PP_STATUS_OK)
+	  
+    # KC; returning back the full msg to understand what's happening in the caller
+    return self.write_parameters([parm], channel=channel)
+    # resp = self.write_parameters([parm], channel=channel)
+    # return (resp == PP_STATUS_OK)
 
   def read_parameters(self, parameters, callback=None, channel=None):
     """Read multiple parameters.
@@ -810,10 +816,23 @@ class master(object):
               response = resp
               self.__processed_requests.remove(resp) 
               break
+		    
+      # KC; passing back more information
       if response is None:
-        return PP_STATUS_TIMEOUT_ANSWER
+	return {
+		'status': PP_STATUS_TIMEOUT_ANSWER,
+		'response': None,
+                }
       else:
-        return resp['message']['data'][1]
+        return {
+		'status': PP_STATUS_OK,
+		'response': response,
+                }
+
+      # if response is None:
+      #   return PP_STATUS_TIMEOUT_ANSWER
+      # else:
+      #   return resp['message']['data'][1]
     else:
       return PP_STATUS_OK
 
